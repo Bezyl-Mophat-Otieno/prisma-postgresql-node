@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//ONE-MANY RELATIONSHIP {ONE USER CAN HAVE MANY POSTS}
+
+model User {
+  id            String           @id @default(uuid())
+  name          String
+  email         String?
+  age           Int
+  role          Role             @default(USER)
+  posts         Post[]           @relation("written Posts")
+  favoritePosts Post[]           @relation("Favorite Posts")
+  preferences   UserPreferences?
+
+  // Block attributes 
+  // @unique - specifies that the fields must be unique
+  @@unique([email, name])
+}
+
+model UserPreferences {
+  id               String  @id @default(uuid())
+  emailPreferences Boolean
+  user             User    @relation(fields: [userId], references: [id])
+  userId           String  @unique
+}
+
+// We only have 2 field type modifiers ie ? - meaning a field can be null and [] - a field can be an array of multiple entries
+// We can use the ? modifier to specify a field that can be null or an array of multiple entries
+// We can also use the [] modifier to specify a field that can be an array of multiple entries
+// We can also use the @default() attribute to specify a default value for a field
+// By giving the posts and favouritePosts fields a label relation name, we can have multiple relations between the User and Post models. \/
+
+model Post {
+  id           String     @id @default(uuid())
+  title        String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  ratings      Float
+  author       User       @relation("written Posts", fields: [authorId], references: [id])
+  authorId     String
+  favoritedBy  User?      @relation("Favorite Posts", fields: [favouritedId], references: [id])
+  favouritedId String?
+  categories   Category[]
+  // Block attributes
+  // @id - specifies a composite Id attribute 
+  // @@id([title, createdAt])
+}
+
+// The above code means that the author field in the Post model is a relation to the User model.
+// The fields argument specifies the fields in the Post model that the relation is based on.
+// The references argument specifies the fields in the User model that the relation references.
+// The @relation attribute is optional, but it is recommended to always use it for clarity.
+// The @relation attribute is also used to specify the name of the relation table in a many-to-many relation.
+
+// MANY-MANY RELATIONSHIP {MANY POSTS CAN HAVE MANY CATEGORIES}
+model Category {
+  id    String @id @default(uuid())
+  name  String @unique
+  posts Post[]
+}
+
+//USING ENUMS
+
+enum Role {
+  USER
+  ADMIN
+}
